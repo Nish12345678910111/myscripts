@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nishgamerr Lua Repository Viewer</title>
+
+<style>
+:root{
+    --bg:#0d0f14;
+    --panel:#141824;
+    --panel-2:#1b2033;
+    --text:#e6e9ff;
+    --muted:#9aa3ff;
+    --accent:#6c7cff;
+    --accent-2:#4f5bff;
+    --border:#252b45;
+    --btn:#1f2550;
+    --btn-hover:#2a33a8;
+}
+
+*{
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+}
+
+body{
+    margin:0;
+    background:linear-gradient(180deg, #0b0d13, #0d0f14 40%);
+    color:var(--text);
+}
+
+header{
+    padding:20px;
+    text-align:center;
+    border-bottom:1px solid var(--border);
+    background:rgba(20,24,36,0.8);
+    backdrop-filter: blur(6px);
+}
+
+header h1{
+    margin:0;
+    font-size:22px;
+    font-weight:700;
+}
+
+header p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:16px;
+}
+
+.toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+}
+
+.search{
+    flex:1;
+    min-width:200px;
+}
+
+.search input{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    outline:none;
+}
+
+.search input::placeholder{
+    color:#7f86c9;
+}
+
+.refresh-btn{
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--btn);
+    color:var(--text);
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.refresh-btn:hover{
+    background:var(--btn-hover);
+}
+
+.grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap:14px;
+}
+
+.card{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.file-name{
+    font-size:14px;
+    font-weight:600;
+    word-break:break-all;
+    color:#e9ecff;
+}
+
+.actions{
+    display:flex;
+    gap:8px;
+    margin-top:auto;
+}
+
+.actions button,
+.actions a{
+    flex:1;
+    text-align:center;
+    padding:9px 10px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--btn);
+    color:var(--text);
+    text-decoration:none;
+    font-size:13px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.actions button:hover,
+.actions a:hover{
+    background:var(--btn-hover);
+}
+
+.status{
+    text-align:center;
+    padding:30px 10px;
+    color:var(--muted);
+    font-size:14px;
+}
+
+footer{
+    text-align:center;
+    padding:14px;
+    color:#7f86c9;
+    font-size:12px;
+    border-top:1px solid var(--border);
+}
+
+/* Mobile tweaks */
+@media (max-width:600px){
+    header h1{ font-size:18px; }
+    .container{ padding:12px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Nishgamerr Lua Scripts</h1>
+    <p>Dark themed PC & mobile viewer · Copy or open raw .lua files</p>
+</header>
+
+<div class="container">
+    <div class="toolbar">
+        <div class="search">
+            <input id="searchInput" type="text" placeholder="Search .lua file..." />
+        </div>
+        <button class="refresh-btn" onclick="loadFiles()">Refresh</button>
+    </div>
+
+    <div id="status" class="status">Loading .lua files…</div>
+    <div id="grid" class="grid" style="display:none;"></div>
+</div>
+
+<footer>
+    Repository: Nish12345678910111 / myscripts
+</footer>
+
+<script>
+const OWNER = "Nish12345678910111";
+const REPO  = "myscripts";
+const BRANCH = "main";
+
+let allFiles = [];
+
+async function loadFiles(){
+    const status = document.getElementById("status");
+    const grid = document.getElementById("grid");
+    grid.style.display = "none";
+    status.style.display = "block";
+    status.textContent = "Loading .lua files…";
+
+    try{
+        const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
+        const res = await fetch(apiUrl);
+        if(!res.ok) throw new Error("GitHub API error");
+
+        const data = await res.json();
+        allFiles = data.filter(f => f.type === "file" && f.name.endsWith(".lua"));
+        renderFiles(allFiles);
+
+        if(allFiles.length === 0){
+            status.textContent = "No .lua files found.";
+        }else{
+            status.style.display = "none";
+            grid.style.display = "grid";
+        }
+    }catch(e){
+        status.textContent = "Failed to load repository files.";
+    }
+}
+
+function renderFiles(files){
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    files.forEach(file=>{
+        const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.name}`;
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const name = document.createElement("div");
+        name.className = "file-name";
+        name.textContent = file.name;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.textContent = "Copy";
+        copyBtn.onclick = async ()=>{
+            try{
+                const res = await fetch(rawUrl);
+                const text = await res.text();
+                await navigator.clipboard.writeText(text);
+                copyBtn.textContent = "Copied";
+                setTimeout(()=>copyBtn.textContent="Copy", 1200);
+            }catch{
+                copyBtn.textContent = "Error";
+                setTimeout(()=>copyBtn.textContent="Copy", 1200);
+            }
+        };
+
+        const rawBtn = document.createElement("a");
+        rawBtn.textContent = "Raw";
+        rawBtn.href = rawUrl;
+        rawBtn.target = "_blank";
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(rawBtn);
+
+        card.appendChild(name);
+        card.appendChild(actions);
+        grid.appendChild(card);
+    });
+}
+
+document.getElementById("searchInput").addEventListener("input", e=>{
+    const q = e.target.value.toLowerCase();
+    const filtered = allFiles.filter(f => f.name.toLowerCase().includes(q));
+    renderFiles(filtered);
+    document.getElementById("grid").style.display = "grid";
+    document.getElementById("status").style.display = filtered.length ? "none" : "block";
+    if(!filtered.length){
+        document.getElementById("status").textContent = "No matching files.";
+    }
+});
+
+loadFiles();
+</script>
+
+</body>
+</html>
