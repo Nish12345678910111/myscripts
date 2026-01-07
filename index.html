@@ -160,7 +160,6 @@ footer{
     border-top:1px solid var(--border);
 }
 
-/* Mobile tweaks */
 @media (max-width:600px){
     header h1{ font-size:18px; }
     .container{ padding:12px; }
@@ -171,7 +170,7 @@ footer{
 
 <header>
     <h1>Nishgamerr Lua Scripts</h1>
-    <p>Dark themed PC & mobile viewer · Copy or open raw .lua files</p>
+    <p>Dark themed PC & mobile viewer · Copy Roblox loadstrings</p>
 </header>
 
 <div class="container">
@@ -219,7 +218,7 @@ async function loadFiles(){
             status.style.display = "none";
             grid.style.display = "grid";
         }
-    }catch(e){
+    }catch{
         status.textContent = "Failed to load repository files.";
     }
 }
@@ -230,6 +229,7 @@ function renderFiles(files){
 
     files.forEach(file=>{
         const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.name}`;
+        const loadstringText = `loadstring(game:HttpGet("${rawUrl}"))()`;
 
         const card = document.createElement("div");
         card.className = "card";
@@ -245,9 +245,7 @@ function renderFiles(files){
         copyBtn.textContent = "Copy";
         copyBtn.onclick = async ()=>{
             try{
-                const res = await fetch(rawUrl);
-                const text = await res.text();
-                await navigator.clipboard.writeText(text);
+                await navigator.clipboard.writeText(loadstringText);
                 copyBtn.textContent = "Copied";
                 setTimeout(()=>copyBtn.textContent="Copy", 1200);
             }catch{
